@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CANVAS — Island Coffee</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue:        #0a7cff;
+  --blue-bright: #4da3ff;
+  --blue-mid:    rgba(10,124,255,0.18);
+  --blue-low:    rgba(10,124,255,0.07);
+  --blue-border: rgba(10,124,255,0.28);
+  --bg:          #060608;
+  --bg2:         #090909;
+  --s1:          #0f0f12;
+  --s2:          #141418;
+  --s3:          #1a1a1f;
+  --s4:          #202026;
+  --divide:      rgba(255,255,255,0.055);
+  --t1:          #f0f0f5;
+  --t2:          #7a7a8a;
+  --t3:          #3a3a45;
+  --green:       #34d399;
+  --amber:       #fbbf24;
+  --red:         #f87171;
+  --indigo:      #818cf8;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { -webkit-font-smoothing:antialiased; }
+
+body {
+  background: var(--bg);
+  color: var(--t1);
+  font-family: 'Barlow', sans-serif;
+  font-weight: 400;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:999; opacity:.5;
+}
+
+/* ═══ HEADER ═══ */
+header {
+  display:flex; align-items:center;
+  padding:0 28px; height:56px;
+  border-bottom:1px solid var(--divide);
+  position:sticky; top:0;
+  background:rgba(6,6,8,0.96);
+  backdrop-filter:blur(24px);
+  z-index:200; gap:14px;
+}
+
+.nb-mark {
+  width:32px; height:32px;
+  background:var(--blue);
+  border-radius:7px;
+  display:grid; place-items:center;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900; font-size:10px;
+  letter-spacing:.05em; color:#fff;
+  flex-shrink:0;
+}
+
+.canvas-word {
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:800; font-size:18px;
+  letter-spacing:.2em; color:var(--blue);
+  text-transform:uppercase;
+}
+
+.h-sep { width:1px; height:18px; background:var(--divide); }
+
+.h-client-name {
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700; font-size:13px;
+  letter-spacing:.08em; text-transform:uppercase;
+}
+.h-client-sub {
+  font-size:9px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--t3);
+  font-family:'Barlow Condensed',sans-serif;
+  margin-top:1px;
+}
+
+.h-right { margin-left:auto; display:flex; align-items:center; gap:14px; }
+
+.status-wrap { display:flex; align-items:center; gap:7px; }
+.pulse {
+  width:6px; height:6px; border-radius:50%;
+  background:var(--green);
+  animation:pulse 2.4s ease infinite;
+}
+@keyframes pulse {
+  0%,100%{ box-shadow:0 0 0 0 rgba(52,211,153,.5); }
+  50%    { box-shadow:0 0 0 5px rgba(52,211,153,0); }
+}
+.status-lbl {
+  font-size:10px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--t2);
+  font-family:'Barlow Condensed',sans-serif;
+}
+
+.h-pill {
+  font-size:10px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--blue);
+  border:1px solid var(--blue-border);
+  padding:4px 11px; border-radius:20px;
+  background:var(--blue-low);
+  font-family:'Barlow Condensed',sans-serif;
+}
+
+/* ═══ SCENARIO BAR ═══ */
+.scbar {
+  display:flex; align-items:center;
+  padding:0 28px; height:42px;
+  border-bottom:1px solid var(--divide);
+  background:var(--bg2);
+  position:sticky; top:56px; z-index:150;
+  gap:6px;
+}
+
+.sclabel {
+  font-size:9px; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--t3);
+  font-family:'Barlow Condensed',sans-serif;
+  margin-right:4px; white-space:nowrap;
+}
+
+.stab {
+  padding:4px 14px; border-radius:5px;
+  border:1px solid transparent; background:transparent;
+  color:var(--t3);
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  cursor:pointer; transition:all .17s; white-space:nowrap;
+  user-select:none;
+}
+.stab:hover { color:var(--t1); border-color:var(--divide); }
+.stab.active { background:var(--blue-mid); border-color:var(--blue-border); color:var(--blue-bright); }
+
+.stab-add {
+  padding:4px 12px; border-radius:5px;
+  border:1px dashed var(--t3); background:transparent;
+  color:var(--t3);
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  cursor:pointer; transition:all .17s;
+}
+.stab-add:hover { border-color:var(--blue-border); color:var(--blue); }
+
+.scbar-right { margin-left:auto; display:flex; gap:7px; align-items:center; }
+
+.sc-btn {
+  padding:4px 13px; border-radius:5px;
+  border:1px solid var(--divide); background:var(--s1);
+  color:var(--t2);
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  cursor:pointer; transition:all .15s;
+}
+.sc-btn:hover { border-color:var(--blue-border); color:var(--blue); }
+
+.sc-run {
+  padding:4px 18px; border-radius:5px; border:none;
+  background:var(--blue); color:#fff;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  cursor:pointer; transition:background .15s, transform .1s;
+}
+.sc-run:hover { background:#1a8aff; }
+.sc-run:active { transform:scale(.97); }
+
+/* ═══ LAYOUT ═══ */
+.layout {
+  display:grid;
+  grid-template-columns:256px 1fr;
+  max-width:1200px;
+  margin:0 auto;
+  padding:18px 22px 60px;
+  gap:14px;
+}
+
+/* ═══ PANELS ═══ */
+.left { display:flex; flex-direction:column; gap:11px; }
+
+.card {
+  background:var(--s1);
+  border:1px solid var(--divide);
+  border-radius:11px; overflow:hidden;
+  animation:fadeUp .5s ease both;
+}
+.card:nth-child(1){animation-delay:.04s}
+.card:nth-child(2){animation-delay:.09s}
+.card:nth-child(3){animation-delay:.14s}
+.card:nth-child(4){animation-delay:.19s}
+
+.card:hover { border-color:rgba(255,255,255,0.08); }
+
+.ch {
+  padding:10px 15px;
+  border-bottom:1px solid var(--divide);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.ch-l { display:flex; align-items:center; gap:7px; }
+.cdot { width:5px;height:5px;border-radius:50%;background:var(--blue); }
+.ctitle {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:9px; letter-spacing:.24em; text-transform:uppercase; color:var(--t2);
+}
+.cact {
+  font-size:9px; color:var(--blue); cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif; letter-spacing:.1em; text-transform:uppercase;
+  transition:opacity .15s;
+}
+.cact:hover { opacity:.7; }
+
+.cb { padding:13px 15px; display:flex; flex-direction:column; gap:10px; }
+
+.field { display:flex; flex-direction:column; gap:5px; }
+.field label {
+  font-size:8.5px; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--t3); font-weight:600;
+}
+.field input, .field select {
+  background:var(--s2); border:1px solid var(--divide);
+  border-radius:7px; padding:7px 10px;
+  color:var(--t1); font-family:'Barlow',sans-serif;
+  font-size:12.5px; font-weight:300; outline:none; width:100%;
+  transition:border-color .15s, background .15s; -webkit-appearance:none;
+}
+.field input:focus, .field select:focus {
+  border-color:var(--blue-border); background:var(--s3);
+}
+.field input::placeholder { color:var(--t3); }
+.field select {
+  cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%233a3a45' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center;
+  padding-right:26px;
+}
+
+.tags { display:flex; flex-wrap:wrap; gap:5px; }
+.tag {
+  font-size:11px; padding:3px 9px; border-radius:20px;
+  border:1px solid var(--divide); color:var(--t3);
+  cursor:pointer; font-family:'Barlow',sans-serif; transition:all .13s; user-select:none;
+}
+.tag:hover { border-color:rgba(10,124,255,.18); color:var(--t2); }
+.tag.on { background:var(--blue-mid); border-color:var(--blue-border); color:var(--blue-bright); }
+
+.hist-item {
+  background:var(--s2); border:1px solid var(--divide);
+  border-radius:7px; padding:9px 12px;
+  transition:border-color .15s; cursor:default;
+}
+.hist-item:hover { border-color:rgba(255,255,255,.08); }
+.hi-name {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11.5px; letter-spacing:.05em; color:var(--t1); margin-bottom:3px;
+}
+.hi-meta { font-size:10.5px; color:var(--t3); }
+
+/* ═══ RIGHT ═══ */
+.right { display:flex; flex-direction:column; gap:12px; }
+
+/* Metrics */
+.metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+
+.mc {
+  background:var(--s1); border:1px solid var(--divide);
+  border-radius:11px; padding:16px 17px;
+  position:relative; overflow:hidden;
+  animation:fadeUp .5s ease both;
+  transition:border-color .2s;
+}
+.mc:hover { border-color:rgba(10,124,255,.15); }
+.mc:nth-child(1){animation-delay:.06s}
+.mc:nth-child(2){animation-delay:.11s}
+.mc:nth-child(3){animation-delay:.16s}
+.mc:nth-child(4){animation-delay:.21s}
+
+.mc::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg, rgba(10,124,255,.05) 0%, transparent 55%);
+  pointer-events:none;
+}
+
+.mc-lbl {
+  font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--t3); font-family:'Barlow Condensed',sans-serif; margin-bottom:9px;
+}
+.mc-val {
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:800; font-size:30px; line-height:1; margin-bottom:5px;
+  letter-spacing:-.01em;
+}
+.mc-sub { font-size:10.5px; font-family:'Barlow Condensed',sans-serif; letter-spacing:.04em; }
+.dpos { color:var(--green); }
+.dneu { color:var(--t3); }
+.damb { color:var(--amber); }
+
+/* Main output card */
+.out-card {
+  background:var(--s1); border:1px solid var(--divide);
+  border-radius:11px; overflow:hidden;
+  animation:fadeUp .5s ease .2s both;
+}
+
+.out-inner {
+  display:grid; grid-template-columns:1fr 1px 1fr;
+}
+
+.divider-col { background:var(--divide); }
+
+/* Mix list */
+.mix { padding:14px 16px; display:flex; flex-direction:column; gap:5px; }
+
+.mrow {
+  display:grid;
+  grid-template-columns:96px 1fr 46px 68px 72px;
+  align-items:center; gap:8px;
+  padding:8px 11px; border-radius:8px;
+  border:1px solid transparent;
+  transition:all .2s ease; cursor:default;
+}
+.mrow:hover { background:var(--s2); border-color:var(--divide); }
+.mrow.lead { background:var(--blue-low); border-color:var(--blue-border); }
+.mrow.lead:hover { background:rgba(10,124,255,.12); }
+
+.mn {
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700; font-size:12px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--t2);
+}
+.mrow.lead .mn { color:var(--blue-bright); }
+
+.bbar { height:3px; border-radius:2px; background:rgba(255,255,255,.05); overflow:hidden; }
+.bfill { height:100%; border-radius:2px; background:var(--t3); transition:width .9s cubic-bezier(.4,0,.2,1); }
+.mrow.lead .bfill { background:var(--blue); }
+
+.mpct {
+  font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px;
+  color:var(--t3); text-align:right;
+}
+.mrow.lead .mpct { color:var(--blue-bright); }
+
+.mspend { font-size:10.5px; color:var(--t3); text-align:right; font-family:'Barlow Condensed',sans-serif; }
+
+.pill {
+  font-size:8.5px; font-family:'Barlow Condensed',sans-serif;
+  letter-spacing:.1em; text-transform:uppercase;
+  padding:2px 7px; border-radius:4px; text-align:center; font-weight:700;
+}
+.pu { background:rgba(52,211,153,.1);  color:var(--green); }
+.pm { background:rgba(251,191,36,.1);  color:var(--amber); }
+.pd { background:rgba(248,113,113,.08);color:var(--red); }
+.px { background:rgba(255,255,255,.04);color:var(--t3); }
+
+/* Rationale */
+.rat {
+  margin:0 16px 16px;
+  background:var(--s2); border:1px solid var(--blue-border);
+  border-radius:8px; padding:12px 15px;
+  display:flex; gap:11px; align-items:flex-start;
+}
+.rat-ico {
+  width:22px;height:22px; flex-shrink:0;
+  background:var(--blue-mid); border:1px solid var(--blue-border);
+  border-radius:5px; display:grid; place-items:center; margin-top:1px;
+}
+.rat-txt { font-size:11.5px; color:var(--t2); line-height:1.7; font-weight:300; }
+.rat-txt strong { color:var(--t1); font-weight:500; }
+
+/* Chart */
+.chart-col { padding:16px 18px; }
+.chart-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.chart-ttl { font-family:'Barlow Condensed',sans-serif; font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:var(--t2); }
+.chart-note { font-size:9px; color:var(--t3); font-family:'Barlow Condensed',sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+.chart-wrap { position:relative; height:188px; }
+.chart-legend { display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:10px; }
+.leg-item { display:flex; align-items:center; gap:6px; font-size:9px; color:var(--t3); font-family:'Barlow Condensed',sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+.leg-line { width:16px; height:2px; border-radius:1px; }
+
+/* Scenario cards */
+.sc-wrap {
+  background:var(--s1); border:1px solid var(--divide);
+  border-radius:11px; overflow:hidden;
+  animation:fadeUp .5s ease .28s both;
+}
+
+.sg { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:14px 16px; }
+
+.scard {
+  background:var(--s2); border:1px solid var(--divide);
+  border-radius:9px; padding:14px;
+  cursor:pointer; transition:all .2s;
+  position:relative; overflow:hidden;
+  user-select:none;
+}
+.scard:hover { border-color:rgba(10,124,255,.18); }
+.scard.active { background:var(--blue-low); border-color:var(--blue-border); }
+.scard.active::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; background:var(--blue); }
+
+.s-tag { font-size:8.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--t3); font-family:'Barlow Condensed',sans-serif; margin-bottom:6px; }
+.scard.active .s-tag { color:var(--blue); }
+.s-name { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:11px; }
+.s-row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; }
+.s-k { font-size:10px; color:var(--t2); font-weight:300; }
+.s-v { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; }
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--s4); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--t3); }
+
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr;}
+  .metrics{grid-template-columns:repeat(2,1fr);}
+  .out-inner{grid-template-columns:1fr;}
+  .divider-col{display:none;}
+  .sg{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="nb-mark">NB</div>
+  <div class="canvas-word">Canvas</div>
+  <div class="h-sep"></div>
+  <div>
+    <div class="h-client-name">Island Coffee</div>
+    <div class="h-client-sub">Active Campaign · Q3 2026</div>
+  </div>
+  <div class="h-right">
+    <div class="status-wrap">
+      <div class="pulse"></div>
+      <span class="status-lbl">Live Data</span>
+    </div>
+    <div class="h-pill">Channel Planning Engine</div>
+  </div>
+</header>
+
+<!-- SCENARIO BAR -->
+<div class="scbar">
+  <span class="sclabel">Scenarios</span>
+  <div class="stab active" onclick="switchTab(this)">Base Plan</div>
+  <div class="stab" onclick="switchTab(this)">Performance Push</div>
+  <div class="stab" onclick="switchTab(this)">Lean Budget</div>
+  <div class="stab-add">+ New Scenario</div>
+  <div class="scbar-right">
+    <div class="sc-btn">Export</div>
+    <div class="sc-btn">Share</div>
+    <button class="sc-run">Run Canvas →</button>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+
+  <!-- LEFT -->
+  <div class="left">
+
+    <div class="card">
+      <div class="ch">
+        <div class="ch-l"><div class="cdot"></div><div class="ctitle">Campaign Brief</div></div>
+        <div class="cact">Edit</div>
+      </div>
+      <div class="cb">
+        <div class="field"><label>Advertiser</label><input type="text" value="Island Coffee" /></div>
+        <div class="field"><label>Campaign</label><input type="text" value="Everyday Ritual — Brand FY26" /></div>
+        <div class="field">
+          <label>Objective</label>
+          <select>
+            <option selected>Brand Awareness + Consideration</option>
+            <option>Direct Response</option>
+            <option>Loyalty / Retention</option>
+          </select>
+        </div>
+        <div class="field"><label>Primary Audience</label><input type="text" value="Coffee lovers, 25–45, AU/NZ" /></div>
+        <div class="field"><label>Flight</label><input type="text" value="Q3 2026 · 13 weeks" /></div>
+        <div class="field"><label>Total Budget</label><input type="text" value="$420,000" /></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch">
+        <div class="ch-l"><div class="cdot"></div><div class="ctitle">Channel Pool</div></div>
+        <div class="cact">All</div>
+      </div>
+      <div class="cb">
+        <div class="tags">
+          <div class="tag on">Meta</div>
+          <div class="tag on">TikTok</div>
+          <div class="tag on">DV360</div>
+          <div class="tag on">Audio</div>
+          <div class="tag on">OOH</div>
+          <div class="tag">YouTube</div>
+          <div class="tag">Snap</div>
+          <div class="tag">BVOD</div>
+          <div class="tag">SEM</div>
+          <div class="tag">Pinterest</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch">
+        <div class="ch-l"><div class="cdot"></div><div class="ctitle">Optimise For</div></div>
+      </div>
+      <div class="cb">
+        <div class="field">
+          <select>
+            <option selected>Audience Reach + Brand Recall</option>
+            <option>Cost Per Unique Reach</option>
+            <option>Consideration Lift</option>
+            <option>Low Carbon</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Risk Tolerance</label>
+          <select>
+            <option>Conservative</option>
+            <option selected>Balanced</option>
+            <option>Aggressive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch">
+        <div class="ch-l"><div class="cdot"></div><div class="ctitle">Historical Signal</div></div>
+        <div class="cact">3 campaigns</div>
+      </div>
+      <div class="cb">
+        <div class="hist-item">
+          <div class="hi-name">Island Coffee Q2 2025</div>
+          <div class="hi-meta">Meta + Audio · $310K · Reach 3.1M</div>
+        </div>
+        <div class="hist-item">
+          <div class="hi-name">Island Coffee Q4 2025</div>
+          <div class="hi-meta">Meta + OOH + TikTok · $390K · Reach 4.0M</div>
+        </div>
+        <div class="hist-item">
+          <div class="hi-name">FMCG / Beverage Benchmarks AU</div>
+          <div class="hi-meta">2024–25 · 14 comparable brands</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="mc">
+        <div class="mc-lbl">Est. Total Reach</div>
+        <div class="mc-val" style="color:var(--blue)">5.4M</div>
+        <div class="mc-sub dpos">↑ 35% vs Q4 2025</div>
+      </div>
+      <div class="mc">
+        <div class="mc-lbl">Budget Allocated</div>
+        <div class="mc-val">$420K</div>
+        <div class="mc-sub dneu">Fully allocated · 5 channels</div>
+      </div>
+      <div class="mc">
+        <div class="mc-lbl">Audience Index</div>
+        <div class="mc-val" style="color:var(--green)">94</div>
+        <div class="mc-sub dpos">Excellent · coffee 25–45 AU/NZ</div>
+      </div>
+      <div class="mc">
+        <div class="mc-lbl">Est. Brand Recall Lift</div>
+        <div class="mc-val" style="color:var(--amber)">+8.2%</div>
+        <div class="mc-sub dneu">vs category avg +4.1%</div>
+      </div>
+    </div>
+
+    <!-- Output card -->
+    <div class="out-card">
+      <div class="ch" style="border-radius:0;">
+        <div class="ch-l"><div class="cdot"></div><div class="ctitle">Channel Mix — Base Plan</div></div>
+        <div style="font-size:9px;color:var(--t3);font-family:'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;">Ranked by audience fit</div>
+      </div>
+
+      <div class="out-inner">
+
+        <!-- Mix -->
+        <div>
+          <div class="mix">
+
+            <div class="mrow lead">
+              <div class="mn">Meta</div>
+              <div class="bbar"><div class="bfill" style="width:34%"></div></div>
+              <div class="mpct">34%</div>
+              <div class="mspend">$142.8K</div>
+              <div class="pill pu">↑ Primary</div>
+            </div>
+
+            <div class="mrow lead">
+              <div class="mn">TikTok</div>
+              <div class="bbar"><div class="bfill" style="width:22%"></div></div>
+              <div class="mpct">22%</div>
+              <div class="mspend">$92.4K</div>
+              <div class="pill pu">↑ Strong</div>
+            </div>
+
+            <div class="mrow">
+              <div class="mn">OOH</div>
+              <div class="bbar"><div class="bfill" style="width:18%"></div></div>
+              <div class="mpct">18%</div>
+              <div class="mspend">$75.6K</div>
+              <div class="pill pm">→ Contextual</div>
+            </div>
+
+            <div class="mrow">
+              <div class="mn">Audio</div>
+              <div class="bbar"><div class="bfill" style="width:14%"></div></div>
+              <div class="mpct">14%</div>
+              <div class="mspend">$58.8K</div>
+              <div class="pill pm">→ Reach ext.</div>
+            </div>
+
+            <div class="mrow">
+              <div class="mn">DV360</div>
+              <div class="bbar"><div class="bfill" style="width:12%"></div></div>
+              <div class="mpct">12%</div>
+              <div class="mspend">$50.4K</div>
+              <div class="pill pm">→ Retarget</div>
+            </div>
+
+            <div class="mrow" style="opacity:.28;pointer-events:none;">
+              <div class="mn" style="text-decoration:line-through;color:var(--t3)">YouTube</div>
+              <div class="bbar"><div class="bfill" style="width:0%"></div></div>
+              <div class="mpct" style="color:var(--t3)">—</div>
+              <div class="mspend" style="color:var(--t3)">Excl.</div>
+              <div class="pill px">Deprioritised</div>
+            </div>
+
+          </div>
+
+          <div class="rat">
+            <div class="rat-ico">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0a7cff" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div class="rat-txt">
+              <strong>Canvas reasoning:</strong> For an everyday ritual brand, the strongest play is <strong>high-frequency social + physical environment</strong>. Meta and TikTok deliver peak reach and purchase-intent signals for 25–45 coffee drinkers across 14 FMCG benchmarks. OOH activates near consumption moments — cafés, transit, convenience. Audio extends reach in morning routines, the highest-index daypart for this category. YouTube excluded: cost-per-unique-reach is 2.3× higher than Meta for this segment.
+            </div>
+          </div>
+        </div>
+
+        <div class="divider-col"></div>
+
+        <!-- Chart -->
+        <div class="chart-col">
+          <div class="chart-head">
+            <span class="chart-ttl">Diminishing Returns — Budget vs Reach</span>
+            <span class="chart-note">● Optimal point</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="drChart"></canvas>
+          </div>
+          <div class="chart-legend">
+            <div class="leg-item"><div class="leg-line" style="background:#0a7cff;"></div>Meta</div>
+            <div class="leg-item"><div class="leg-line" style="background:#818cf8;"></div>TikTok</div>
+            <div class="leg-item"><div class="leg-line" style="background:rgba(255,255,255,0.22);"></div>OOH</div>
+            <div class="leg-item"><div class="leg-line" style="background:rgba(251,191,36,0.5);"></div>Audio</div>
+            <div class="leg-item"><div class="leg-line" style="background:rgba(52,211,153,0.4);"></div>DV360</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Scenario compare -->
+    <div class="sc-wrap">
+      <div class="ch" style="border-radius:0;">
+        <div class="ch-l"><div class="cdot"></div><div class="ctitle">Scenario Comparison</div></div>
+        <div style="font-size:9px;color:var(--t3);font-family:'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;">Click to activate</div>
+      </div>
+      <div class="sg">
+
+        <div class="scard active" onclick="activateSc(this)">
+          <div class="s-tag">Active — Scenario A</div>
+          <div class="s-name">Base Plan</div>
+          <div class="s-row"><span class="s-k">Budget</span><span class="s-v">$420K</span></div>
+          <div class="s-row"><span class="s-k">Channels</span><span class="s-v" style="color:var(--blue-bright)">5</span></div>
+          <div class="s-row"><span class="s-k">Est. Reach</span><span class="s-v" style="color:var(--green)">5.4M</span></div>
+          <div class="s-row"><span class="s-k">Audience Index</span><span class="s-v" style="color:var(--green)">94</span></div>
+          <div class="s-row"><span class="s-k">Brand Recall Lift</span><span class="s-v" style="color:var(--amber)">+8.2%</span></div>
+        </div>
+
+        <div class="scard" onclick="activateSc(this)">
+          <div class="s-tag">Scenario B</div>
+          <div class="s-name">Performance Push</div>
+          <div class="s-row"><span class="s-k">Budget</span><span class="s-v">$420K</span></div>
+          <div class="s-row"><span class="s-k">Channels</span><span class="s-v">3</span></div>
+          <div class="s-row"><span class="s-k">Est. Reach</span><span class="s-v" style="color:var(--amber)">4.1M</span></div>
+          <div class="s-row"><span class="s-k">Audience Index</span><span class="s-v" style="color:var(--amber)">87</span></div>
+          <div class="s-row"><span class="s-k">Brand Recall Lift</span><span class="s-v" style="color:var(--t2)">+5.8%</span></div>
+        </div>
+
+        <div class="scard" onclick="activateSc(this)">
+          <div class="s-tag">Scenario C</div>
+          <div class="s-name">Lean Budget</div>
+          <div class="s-row"><span class="s-k">Budget</span><span class="s-v" style="color:var(--amber)">$280K</span></div>
+          <div class="s-row"><span class="s-k">Channels</span><span class="s-v">3</span></div>
+          <div class="s-row"><span class="s-k">Est. Reach</span><span class="s-v" style="color:var(--red)">3.2M</span></div>
+          <div class="s-row"><span class="s-k">Audience Index</span><span class="s-v" style="color:var(--t2)">81</span></div>
+          <div class="s-row"><span class="s-k">Brand Recall Lift</span><span class="s-v" style="color:var(--red)">+3.1%</span></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// Diminishing returns: logarithmic growth
+function dr(ceiling, k, n) {
+  return Array.from({length:n}, (_,i) => {
+    const x = i/(n-1);
+    return +(ceiling*(1-Math.exp(-k*x))).toFixed(3);
+  });
+}
+
+const N = 26;
+const labels = Array.from({length:N}, (_,i) => {
+  const v = Math.round((i/(N-1))*420);
+  return i%5===0 ? '$'+v+'K' : '';
+});
+
+const series = [
+  { label:'Meta',   data:dr(2.9,4.6,N), color:'#0a7cff', opt:16, w:2   },
+  { label:'TikTok', data:dr(2.1,3.9,N), color:'#818cf8', opt:15, w:2   },
+  { label:'OOH',    data:dr(1.6,3.1,N), color:'rgba(255,255,255,0.25)', opt:null, w:1.5 },
+  { label:'Audio',  data:dr(1.2,2.5,N), color:'rgba(251,191,36,0.5)',   opt:null, w:1.5 },
+  { label:'DV360',  data:dr(0.9,2.1,N), color:'rgba(52,211,153,0.4)',   opt:null, w:1.5 },
+];
+
+const ctx = document.getElementById('drChart').getContext('2d');
+
+new Chart(ctx, {
+  type:'line',
+  data:{
+    labels,
+    datasets: series.map(s=>({
+      label: s.label,
+      data: s.data,
+      borderColor: s.color,
+      borderWidth: s.w,
+      tension: 0.42,
+      fill: false,
+      pointRadius: s.data.map((_,i)=>(s.opt&&i===s.opt)?5:0),
+      pointHoverRadius: 4,
+      pointBackgroundColor: s.color,
+      pointBorderColor: '#0f0f12',
+      pointBorderWidth: 2,
+    }))
+  },
+  options:{
+    responsive:true,
+    maintainAspectRatio:false,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{
+      legend:{ display:false },
+      tooltip:{
+        backgroundColor:'#141418',
+        borderColor:'rgba(255,255,255,0.06)',
+        borderWidth:1,
+        titleColor:'#7a7a8a',
+        bodyColor:'#f0f0f5',
+        padding:10,
+        titleFont:{ family:'Barlow Condensed', size:9, weight:'400' },
+        bodyFont:{ family:'Barlow Condensed', size:11, weight:'700' },
+        callbacks:{
+          label: c => `  ${c.dataset.label}  ${c.parsed.y.toFixed(2)}M reach`
+        }
+      }
+    },
+    scales:{
+      x:{
+        grid:{ color:'rgba(255,255,255,0.025)', drawBorder:false },
+        ticks:{ color:'#3a3a45', font:{ family:'Barlow Condensed', size:9 }, maxRotation:0 },
+        border:{ display:false }
+      },
+      y:{
+        grid:{ color:'rgba(255,255,255,0.025)', drawBorder:false },
+        ticks:{ color:'#3a3a45', font:{ family:'Barlow Condensed', size:9 }, callback:v=>v.toFixed(1)+'M' },
+        border:{ display:false },
+        title:{ display:true, text:'Estimated Reach', color:'#3a3a45', font:{ family:'Barlow Condensed', size:9 } }
+      }
+    }
+  }
+});
+
+// Scenario tabs
+function switchTab(el){
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Scenario cards
+function activateSc(el){
+  document.querySelectorAll('.scard').forEach(c=>{
+    c.classList.remove('active');
+    const t = c.querySelector('.s-tag');
+    if(t) t.textContent = t.textContent.replace(/^Active — /,'');
+  });
+  el.classList.add('active');
+  const t = el.querySelector('.s-tag');
+  if(t) t.textContent = 'Active — ' + t.textContent;
+}
+
+// Tag toggle
+document.querySelectorAll('.tag').forEach(t=>{
+  t.addEventListener('click',()=>t.classList.toggle('on'));
+});
+</script>
+</body>
+</html>
